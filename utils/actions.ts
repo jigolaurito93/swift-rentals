@@ -19,6 +19,14 @@ const getAuthUser = async () => {
   return user;
 };
 
+const renderError = (error: unknown): { message: string } => {
+  console.log(error);
+
+  return {
+    message: error instanceof Error ? error.message : "An error occurred",
+  };
+};
+
 export const createProfileAction = async (
   prevState: any,
   formData: FormData
@@ -44,10 +52,8 @@ export const createProfileAction = async (
       },
     });
   } catch (error) {
-    console.log(error);
-    return {
-      message: error instanceof Error ? error.message : "An error occurred",
-    };
+    return
+    renderError(error);
   }
   redirect("/");
 };
@@ -85,5 +91,26 @@ export const updateProfileAction = async (
   prevState: any,
   formData: FormData
 ): Promise<{ message: string }> => {
-  return { message: "update profile action" };
+  // Check if the user is logged in in clerk, returns user information
+  const user = await getAuthUser();
+
+  try {
+    // Grab data from form
+    const rawData = Object.fromEntries(formData);
+    // Validate the formData object using profileSchema from zod
+    const validatedFields = profileSchema.parse(rawData);
+
+    await db.profile.update({
+      where: {
+        clerkId: user.id,
+      },
+      // Update the profile with the validatedFields
+      data: validatedFields,
+    });
+    // Revalidate the profile path and refresh page
+    revalidatePath("/profile");
+    return { message: "Profile update successfully" };
+  } catch (error) {
+    return renderError(error);
+  }
 };
