@@ -6,6 +6,19 @@ import { redirect } from "next/navigation";
 
 import { profileSchema } from "./schemas";
 
+// Function to check if there is a user logged in and returns the user information
+const getAuthUser = async () => {
+  // Checks if the user is logged in with clerkClient
+  const user = await currentUser();
+  // If there is no user logged in, return an error message
+  if (!user) {
+    throw new Error("You must be logged in to access this route");
+  }
+  // If there is a user logged in but there is not private metadata and does not have a profile, redirect to create a new profile and return user information object
+  if (!user.privateMetadata.hasProfile) redirect("/profile/create");
+  return user;
+};
+
 export const createProfileAction = async (
   prevState: any,
   formData: FormData
@@ -41,6 +54,7 @@ export const createProfileAction = async (
 
 export const fetchProfileImage = async () => {
   const user = await currentUser();
+  // check for user first, or else it will throw an error when trying to access user.id
   if (!user) return null;
   const profile = await db.profile.findUnique({
     where: {
@@ -51,4 +65,25 @@ export const fetchProfileImage = async () => {
     },
   });
   return profile?.profileImage;
+};
+
+// Function to fetch the profile of the user from the database
+export const fetchProfile = async () => {
+  // Function to fetch the profile of the user from the clerk
+  const user = await getAuthUser();
+  // Fetch the profile of the user from the database where the user id from clerk is the same as the user id from the database
+  const profile = await db.profile.findUnique({
+    where: {
+      clerkId: user.id,
+    },
+  });
+  if (!profile) redirect("/profile/create");
+  return profile;
+};
+
+export const updateProfileAction = async (
+  prevState: any,
+  formData: FormData
+): Promise<{ message: string }> => {
+  return { message: "update profile action" };
 };
