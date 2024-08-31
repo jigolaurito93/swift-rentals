@@ -4,7 +4,7 @@ import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { profileSchema } from "./schemas";
+import { profileSchema, validateWithZodSchema } from "./schemas";
 
 // Function to check if there is a user logged in and returns the user information
 const getAuthUser = async () => {
@@ -32,7 +32,7 @@ export const createProfileAction = async (
   formData: FormData
 ) => {
   const rawData = Object.fromEntries(formData);
-  const validatedFields = profileSchema.parse(rawData);
+  const validatedFields = validateWithZodSchema(profileSchema, rawData);
   try {
     const user = await currentUser();
     if (!user) {
@@ -52,7 +52,7 @@ export const createProfileAction = async (
       },
     });
   } catch (error) {
-    return
+    return;
     renderError(error);
   }
   redirect("/");
@@ -97,14 +97,7 @@ export const updateProfileAction = async (
   try {
     // Grab data from form
     const rawData = Object.fromEntries(formData);
-    // Validate the formData object using profileSchema from zod
-    const validatedFields = profileSchema.safeParse(rawData);
-    console.log(validatedFields);
-
-    if (!validatedFields.success) {
-      const error = validatedFields.error.errors.map((error) => error.message);
-      throw new Error(error.join(","));
-    }
+    const validatedFields = validateWithZodSchema(profileSchema, rawData);
 
     await db.profile.update({
       where: {
