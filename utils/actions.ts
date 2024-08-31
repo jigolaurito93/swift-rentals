@@ -98,7 +98,13 @@ export const updateProfileAction = async (
     // Grab data from form
     const rawData = Object.fromEntries(formData);
     // Validate the formData object using profileSchema from zod
-    const validatedFields = profileSchema.parse(rawData);
+    const validatedFields = profileSchema.safeParse(rawData);
+    console.log(validatedFields);
+
+    if (!validatedFields.success) {
+      const error = validatedFields.error.errors.map((error) => error.message);
+      throw new Error(error.join(","));
+    }
 
     await db.profile.update({
       where: {
