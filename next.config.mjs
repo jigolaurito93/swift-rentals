@@ -2,6 +2,9 @@
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 export default {
+  images: {
+    domains: ['img.clerk.com'],
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.plugins.push(
